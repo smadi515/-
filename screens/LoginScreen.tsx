@@ -1,7 +1,9 @@
-import React from 'react';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../App'; // Adjust the import path as necessary
+
 import {
   SafeAreaView,
   View,
@@ -13,28 +15,51 @@ import {
   I18nManager,
   ImageBackground,
   ScrollView,
+  Alert,
 } from 'react-native';
-import {RootStackParamList} from '../App';
-import LinearGradient from 'react-native-linear-gradient';
-// Force RTL layout if not already set
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
-
 type LoginScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Login'
 >;
 
+import LinearGradient from 'react-native-linear-gradient';
+// Force RTL layout if not already set
+I18nManager.allowRTL(true);
+I18nManager.forceRTL(true);
+
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
-    try {
-      await AsyncStorage.setItem('isLoggedIn', 'true');
-      navigation.navigate('Home');
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
+  const handleLogin = () => {
+    fetch('https://mqj.auj.mybluehost.me/harir/wp-json/jwt-auth/v1/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify({
+        username: username,
+        password: password,
+      }),
+    })
+      .then(response => {
+        console.log('Raw response:', response);
+        return response.json();
+      }) // Parse the response as JSON
+      .then(res => {
+        console.log('Parsed response:', res);
+        if (res.success === true) {
+          console.log('Login success! User:', res.user);
+          AsyncStorage.setItem('user', res.user);
+          navigation.navigate('Home'); // Navigate to HomeScreen on successful login
+        } else {
+          console.log('Login failed:', res.message);
+          Alert.alert('خطأ في تسجيل الدخول');
+          Alert.alert('خطأ في تسجيل الدخول'); // Alert for login error
+        }
+      });
   };
 
   return (
@@ -68,12 +93,16 @@ const LoginScreen = () => {
                 placeholder="اسم المستخدم"
                 placeholderTextColor="#999"
                 style={styles.input}
+                value={username}
+                onChangeText={setUsername}
               />
               <TextInput
                 placeholder="كلمة المرور"
                 placeholderTextColor="#999"
                 secureTextEntry
                 style={styles.input}
+                value={password}
+                onChangeText={setPassword}
               />
               <TouchableOpacity>
                 <Text style={styles.forgotPassword}>نسيت كلمة المرور</Text>

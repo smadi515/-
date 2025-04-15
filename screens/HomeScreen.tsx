@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import ImagePickerComponent from '../components/ImagePickerComponent';
-import {
-  saveOfflineProduct,
-  getOfflineProducts,
-  removeOfflineProduct,
-} from '../utils/storage';
+import {saveOfflineProduct} from '../utils/storage';
 import Icon from '../components/icon';
 
 const HomeScreen = () => {
@@ -31,8 +27,7 @@ const HomeScreen = () => {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [limitedQuantity, setLimitedQuantity] = useState(false);
-
-  const [offlineProducts, setOfflineProducts] = useState<any[]>([]);
+  const [showProducts, setShowProducts] = useState(false);
 
   const handleSave = async () => {
     const productId = Date.now().toString();
@@ -58,29 +53,6 @@ const HomeScreen = () => {
       Alert.alert('تم الحفظ بدون اتصال. حاول لاحقاً.');
     }
   };
-
-  const loadOffline = async () => {
-    const products = await getOfflineProducts();
-    setOfflineProducts(products);
-  };
-
-  const retryUpload = async (product: any) => {
-    try {
-      // Simulate successful upload (remove throw)
-      // TODO: Replace this with your real API call
-      // throw new Error('Still offline');
-
-      await removeOfflineProduct(product.id);
-      await loadOffline();
-      Alert.alert('تم رفع المنتج بنجاح!');
-    } catch {
-      Alert.alert('ما زال فشل الرفع. حاول لاحقاً.');
-    }
-  };
-
-  useEffect(() => {
-    loadOffline();
-  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -148,32 +120,15 @@ const HomeScreen = () => {
       />
 
       <View style={styles.switchRow}>
-        <Text>كمية محدودة</Text>
+        <Text style={{position: 'absolute', right: 55}}>عرض المنتج</Text>
+        <Switch value={showProducts} onValueChange={setShowProducts} />
+        <Text style={{position: 'absolute', left: 55}}>كمية محدودة</Text>
         <Switch value={limitedQuantity} onValueChange={setLimitedQuantity} />
       </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveText}>حفظ</Text>
       </TouchableOpacity>
-
-      {/* Offline Items */}
-      {offlineProducts.length > 0 && (
-        <>
-          <Text style={styles.offlineTitle}>محاولات رفع غير ناجحة:</Text>
-          {offlineProducts.map(product => (
-            <View key={product.id} style={styles.offlineItem}>
-              <Text>
-                {product.name} - {product.price} JOD
-              </Text>
-              <TouchableOpacity
-                style={styles.retryBtn}
-                onPress={() => retryUpload(product)}>
-                <Text style={styles.retryText}>🔁 إعادة المحاولة</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </>
-      )}
     </ScrollView>
   );
 };
@@ -229,7 +184,7 @@ const styles = StyleSheet.create({
   },
   currency: {marginRight: 10, fontSize: 18, position: 'absolute', right: 0},
   switchRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 10,
