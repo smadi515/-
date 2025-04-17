@@ -10,8 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import ImagePickerComponent from '../components/ImagePickerComponent';
-import {saveOfflineProduct} from '../utils/storage';
+import {Picker} from '@react-native-picker/picker';
 import Icon from '../components/icon';
+import {Buffer} from 'buffer';
+global.Buffer = global.Buffer || Buffer;
 
 const HomeScreen = () => {
   const [mainImage, setMainImage] = useState<any>(null);
@@ -30,27 +32,57 @@ const HomeScreen = () => {
   const [showProducts, setShowProducts] = useState(false);
 
   const handleSave = async () => {
-    const productId = Date.now().toString();
     const product = {
-      id: productId,
       name,
-      price,
-      category,
+      type: 'simple',
+      regular_price: price,
       description,
-      limitedQuantity,
-      mainImage,
-      extraImages,
+      categories: [{name: category}],
+      manage_stock: limitedQuantity,
+      status: showProducts ? 'publish' : 'draft',
     };
 
-    try {
-      // Replace this with your real API call
-      throw new Error('Simulated upload failure');
+    //  const consumerKey = 'YOUR_CONSUMER_KEY';
+    // const consumerSecret = 'YOUR_CONSUMER_SECRET';
+    const apiUrl = `https://mqj.auj.mybluehost.me/harir/wp-json/wc/v3/products`;
 
-      // On success: you could clear offline
-    } catch (err) {
-      console.log('Upload failed. Saving offline...');
-      await saveOfflineProduct(productId, product);
-      Alert.alert('تم الحفظ بدون اتصال. حاول لاحقاً.');
+    // const credentials = Buffer.from(
+    //   `${consumerKey}:${consumerSecret}`,
+    // ).toString('base64');
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL21xai5hdWoubXlibHVlaG9zdC5tZS9oYXJpciIsImlhdCI6MTc0NDc5Mzg1NiwibmJmIjoxNzQ0NzkzODU2LCJleHAiOjE3NDUzOTg2NTYsImRhdGEiOnsidXNlciI6eyJpZCI6IjIifX19.Yz1xM21QP2DcJmXj8Z1jhkFxlR5psGoDyo8_9t8ZZxg`,
+        },
+        body: JSON.stringify(product),
+      });
+      const res = await fetch(
+        'https://mqj.auj.mybluehost.me/harir/wp-json/wc/v3/products',
+        {
+          headers: {
+            Authorization: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL21xai5hdWoubXlibHVlaG9zdC5tZS9oYXJpciIsImlhdCI6MTc0NDc5Mzg1NiwibmJmIjoxNzQ0NzkzODU2LCJleHAiOjE3NDUzOTg2NTYsImRhdGEiOnsidXNlciI6eyJpZCI6IjIifX19.Yz1xM21QP2DcJmXj8Z1jhkFxlR5psGoDyo8_9t8ZZxg`,
+          },
+        },
+      );
+      const data = await res.json();
+      console.log(data);
+
+      const resText = await response.text(); // <-- get raw response
+      if (!response.ok) {
+        console.log('Raw response:', resText);
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      const resData = JSON.parse(resText);
+      console.log('Product created:', resData);
+      Alert.alert('تم حفظ المنتج بنجاح!');
+    } catch (err: any) {
+      console.error('API error:', err.message || err);
+      Alert.alert('فشل الحفظ على السيرفر. تحقق من الاتصال أو البيانات.');
     }
   };
 
@@ -105,12 +137,14 @@ const HomeScreen = () => {
           keyboardType="numeric"
         />
       </View>
-      <TextInput
-        placeholder="فئة المنتج"
-        style={styles.input}
-        value={category}
-        onChangeText={setCategory}
-      />
+
+      <Picker
+        style={{backgroundColor: 'black'}}
+        placeholder="أضف وصف المنتج"
+        selectedValue={category}
+        onValueChange={itemValue => setCategory(itemValue)}>
+        <Picker.Item label="simple" value="electronics" />
+      </Picker>
       <TextInput
         placeholder="أضف وصف المنتج"
         style={[styles.input, {height: 80}]}

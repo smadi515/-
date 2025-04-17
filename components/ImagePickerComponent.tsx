@@ -1,5 +1,4 @@
 import React from 'react';
-
 import {TouchableOpacity, Image, StyleSheet, Alert, Text} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Icon from './icon';

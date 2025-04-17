@@ -23,6 +23,7 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 import LinearGradient from 'react-native-linear-gradient';
+import {login} from '../lib/api';
 // Force RTL layout if not already set
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -32,34 +33,24 @@ const LoginScreen = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    fetch('https://mqj.auj.mybluehost.me/harir/wp-json/jwt-auth/v1/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  const handleLogin = async () => {
+    try {
+      const res = await login(username, password);
+      console.log('Parsed response:', res);
 
-      body: JSON.stringify({
-        username: username,
-        password: password,
-      }),
-    })
-      .then(response => {
-        console.log('Raw response:', response);
-        return response.json();
-      }) // Parse the response as JSON
-      .then(res => {
-        console.log('Parsed response:', res);
-        if (res.success === true) {
-          console.log('Login success! User:', res.user);
-          AsyncStorage.setItem('user', res.user);
-          navigation.navigate('Home'); // Navigate to HomeScreen on successful login
-        } else {
-          console.log('Login failed:', res.message);
-          Alert.alert('خطأ في تسجيل الدخول');
-          Alert.alert('خطأ في تسجيل الدخول'); // Alert for login error
-        }
-      });
+      if (res.token) {
+        console.log('Login success!');
+        await AsyncStorage.setItem('user', JSON.stringify(res));
+        navigation.navigate('Home');
+      } else {
+        console.log('Login failed:', res.message || 'No token in response');
+        Alert.alert('خطأ في تسجيل الدخول', res.message || 'حدث خطأ غير متوقع');
+      }
+    } catch (error: any) {
+      // Network or unexpected error
+      console.error('Raw fetch error:', error);
+      Alert.alert('خطأ في تسجيل الدخول', 'تعذر الاتصال بالخادم');
+    }
   };
 
   return (
